@@ -1,107 +1,61 @@
 import networkx as nx
+import matplotlib.pyplot as plt
 
-def calcular_ruta_optima(perfil, duracion):
-    """
-    Calcula la ruta óptima usando NetworkX según el perfil del usuario 
-    y la duración de la experiencia ('1_dia' o '3_dias').
-    """
+def crear_red_yucatan():
+    # Crear el grafo vial de Yucatán enfocado en redistribución turística
     G = nx.Graph()
-    
-    # -------------------------------------------------------------------------
-    # 1. PERFIL: RELAJACIÓN (Naturaleza, haciendas y comunidades tranquilas)
-    # -------------------------------------------------------------------------
-    if perfil == 'Relajacion':
-        if duracion == '1_dia':
-            # Micro-circuito local (Zona Centro-Sur)
-            conexiones = [
-                ("Hacienda Yaxcopoil", "Cenote Dzonbacal (Tekit)", 28.1),
-                ("Cenote Dzonbacal (Tekit)", "Pueblo Mágico Maní", 42.5)
-            ]
-            inicio = "Hacienda Yaxcopoil"
-            fin = "Pueblo Mágico Maní"
-        else:
-            # Road Trip de 3 Días (Circuito extendido desde la costa oeste)
-            conexiones = [
-                ("Celestún (Ría)", "Hacienda Yaxcopoil", 75.4),
-                ("Hacienda Yaxcopoil", "Cenote Dzonbacal (Tekit)", 28.1),
-                ("Cenote Dzonbacal (Tekit)", "Pueblo Mágico Maní", 42.5),
-                ("Celestún (Ría)", "Cenote Dzonbacal (Tekit)", 95.0)
-            ]
-            inicio = "Celestún (Ría)"
-            fin = "Pueblo Mágico Maní"
 
-    # -------------------------------------------------------------------------
-    # 2. PERFIL: AVENTURERO (Arqueología, historia y senderos)
-    # -------------------------------------------------------------------------
-    elif perfil == 'Aventurero':
-        if duracion == '1_dia':
-            # Micro-circuito arqueológico rápido
-            conexiones = [
-                ("Zona Arqueológica Mayapán", "Acanceh (Pirámides)", 18.5),
-                ("Acanceh (Pirámides)", "Tecoh (Sedes Mayas)", 22.0)
-            ]
-            inicio = "Zona Arqueológica Mayapán"
-            fin = "Tecoh (Sedes Mayas)"
-        else:
-            # Road Trip de 3 Días (Costa norte y sur profundo)
-            conexiones = [
-                ("Xcambó", "Dzibilchaltún", 45.2),
-                ("Dzibilchaltún", "Grutas de Loltún", 115.0),
-                ("Xcambó", "Grutas de Loltún", 140.5)
-            ]
-            inicio = "Xcambó"
-            fin = "Grutas de Loltún"
+    # Definir nodos principales (Nodos saturados vs Corredores emergentes del reporte)
+    nodos_atractivos = {
+        # Zonas saturadas base
+        "Mérida_Centro": {"tipo": "Urbano_Saturado", "lat": 20.967, "lon": -89.623},
+        "Progreso": {"tipo": "Playa_Saturada", "lat": 21.284, "lon": -89.663},
+        
+        # Corredor Poniente / Costa y Ría
+        "Sisal": {"tipo": "Pueblo_Magico_Playa", "lat": 21.166, "lon": -90.046},
+        "Celestún": {"tipo": "Naturaleza_Reserva", "lat": 20.864, "lon": -90.395},
+        
+        # Corredor Central / Cultural
+        "Izamal": {"tipo": "Pueblo_Magico_Cultural", "lat": 20.933, "lon": -89.016},
+        "Ruta_Cenotes_Homun": {"tipo": "Naturaleza_Cenotes", "lat": 20.733, "lon": -89.283},
+        
+        # Corredor Sur / Biocultural (Mencionado en el reporte)
+        "Santa_Elena": {"tipo": "Turismo_Comunitario", "lat": 20.332, "lon": -89.633},
+        
+        # Corredor Oriente / Arqueología y Cenotes (Mencionado en el reporte)
+        "Valladolid": {"tipo": "Pueblo_Magico_Cenotes", "lat": 20.689, "lon": -88.203},
+        "Ek_Balam": {"tipo": "Arqueologia_Alternativa", "lat": 20.893, "lon": -88.132}
+    }
 
-    # -------------------------------------------------------------------------
-    # 3. PERFIL: EXTREMO (Cenotes profundos, grutas y ecoturismo costero)
-    # -------------------------------------------------------------------------
-    elif perfil == 'Extremo':
-        if duracion == '1_dia':
-            # Micro-circuito de cenotes y cavernas
-            conexiones = [
-                ("Cenote San Ignacio (Chocholá)", "Cuzamá (Grutas)", 24.1),
-                ("Cuzamá (Grutas)", "Cenotes de Homún", 16.2)
-            ]
-            inicio = "Cenote San Ignacio (Chocholá)"
-            fin = "Cenotes de Homún"
-        else:
-            # Road Trip de 3 Días (De poniente a oriente extremo)
-            conexiones = [
-                ("Cenote San Ignacio (Chocholá)", "Cenotes de Homún", 55.3),
-                ("Cenotes de Homún", "El Cuyo (Reserva)", 185.4),
-                ("Cenote San Ignacio (Chocholá)", "El Cuyo (Reserva)", 210.0)
-            ]
-            inicio = "Cenote San Ignacio (Chocholá)"
-            fin = "El Cuyo (Reserva)"
+    # Agregar nodos al grafo
+    for nodo, datos in nodos_atractivos.items():
+        G.add_node(nodo, **datos)
 
-    # Construir el grafo ponderado
-    for u, v, w in conexiones:
-        G.add_edge(u, v, weight=w)
+    # Definir aristas (carreteras) con distancias (km) y factor de congestión base
+    conexiones = [
+        # Conexiones desde Mérida (Nodo central saturado)
+        ("Mérida_Centro", "Progreso", 36.0, 0.9),       # Alta congestión
+        ("Mérida_Centro", "Sisal", 53.0, 0.3),          # Alternativa costa poniente
+        ("Mérida_Centro", "Celestún", 95.0, 0.4),       # Alternativa ría y flamencos
+        ("Mérida_Centro", "Izamal", 67.0, 0.4),         # Ruta cultural amarilla
+        ("Mérida_Centro", "Ruta_Cenotes_Homun", 45.0, 0.4),
+        ("Mérida_Centro", "Santa_Elena", 85.0, 0.3),    # Ruta sur / Puuc
+        ("Mérida_Centro", "Valladolid", 160.0, 0.6),    # Conexión oriente principal
+        
+        # Conexiones regionales secundarias (Redistribución sin pasar por Mérida)
+        ("Izamal", "Valladolid", 110.0, 0.3),
+        ("Valladolid", "Ek_Balam", 30.0, 0.2),          # Desvío hacia alternativa arqueológica
+        ("Sisal", "Celestún", 75.0, 0.2),               # Corredor costero poniente
+        ("Santa_Elena", "Ruta_Cenotes_Homun", 70.0, 0.3)
+    ]
 
-    # Calcular ruta óptima con el algoritmo de Dijkstra
-    try:
-        ruta_optima = nx.shortest_path(G, source=inicio, target=fin, weight='weight')
-        distancia_total = nx.shortest_path_length(G, source=inicio, target=fin, weight='weight')
-        return ruta_optima, distancia_total
-    except nx.NetworkXNoPath:
-        return ["Ruta no disponible para estos parámetros"], 0.0
+    for origen, destino, distancia, congestion in conexiones:
+        # El peso efectivo combina la distancia real y la penalización por tráfico en tiempo real
+        peso_total = distancia * (1 + congestion)
+        G.add_edge(origen, destino, weight=peso_total, distancia_km=distancia, congestion=congestion)
 
+    return G
 
 if __name__ == "__main__":
-    print("==================================================")
-    print("   SIMULACIÓN DE RUTAS MULTI-ESCALA (YUCATÁN)      ")
-    print("==================================================\n")
-    
-    # Pruebas de simulación para ambos modos
-    perfiles = ['Relajacion', 'Aventurero', 'Extremo']
-    modalidades = ['1_dia', '3_dias']
-    
-    for p in perfiles:
-        for m in modalidades:
-            ruta, dist = calcular_ruta_optima(p, m)
-            tipo_viaje = "Escapada 1 Día" if m == '1_dia' else "Road Trip 3 Días"
-            print(f"[{p.upper()} - {tipo_viaje}]")
-            print(f"  📍 Ruta: {' -> '.join(ruta)}")
-            print(f"  📏 Distancia: {dist} km\n")
-            
-    print("==================================================")
+    grafo = crear_red_yucatan()
+    print(f"Red cargada exitosamente con {grafo.number_of_nodes()} destinos y {grafo.number_of_edges()} rutas viales.")
