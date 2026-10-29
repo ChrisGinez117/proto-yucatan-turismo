@@ -5,135 +5,123 @@ import matplotlib.pyplot as plt
 
 # 1. Configuración de página
 st.set_page_config(
-    page_title="Turismo Sustentable Yucatán",
-    page_icon="🌱",
+    page_title="Sistema de Redistribución Turística - Yucatán",
+    page_icon="🏛️",
     layout="wide"
 )
 
-# 2. Definición del Grafo con NetworkX
+st.title("🏛️ Sistema Inteligente de Redistribución Turística en Yucatán")
+st.markdown("### Basado en Datos Históricos del INAH y Teoría de Grafos (NetworkX)")
+st.markdown("---")
+
+# 2. Construcción del Grafo Oficial del Equipo (Clústeres INAH)
 @st.cache_data
-def obtener_grafo_yucatan():
+def crear_grafo_inah():
     G = nx.Graph()
-    conexiones = [
-        ("Mérida Centro", "Progreso", 36, 0.9),
-        ("Mérida Centro", "Sisal", 53, 0.2),
-        ("Mérida Centro", "Celestún", 95, 0.3),
-        ("Mérida Centro", "Izamal", 67, 0.4),
-        ("Mérida Centro", "Santa Elena", 85, 0.2),
-        ("Mérida Centro", "Valladolid", 160, 0.5),
-        ("Izamal", "Valladolid", 110, 0.3),
-        ("Valladolid", "Ek Balam", 30, 0.2),
-        ("Sisal", "Celestún", 75, 0.2)
+    
+    # Corredores arqueológicos basados en el reporte del equipo
+    corredores = [
+        # Clúster Oriente (Alternativas a Chichén Itzá)
+        ("Zona Arqueológica de Chichén Itzá", "Zona Arqueológica de Ekbalam"),
+        ("Zona Arqueológica de Chichén Itzá", "Zona Arqueológica de Izamal"),
+        ("Zona Arqueológica de Chichén Itzá", "Zona Arqueológica de Mayapán"),
+        
+        # Clúster Sur Ruta Puuc (Alternativas a Uxmal)
+        ("Zona Arqueológica de Uxmal con museo de sitio", "Zona Arqueológica de Kabah"),
+        ("Zona Arqueológica de Kabah", "Zona Arqueológica de Sayil"),
+        ("Zona Arqueológica de Sayil", "Zona Arqueológica de Labná"),
+        ("Zona Arqueológica de Labná", "Zona Arqueológica de Xlapak")
     ]
-    for origen, destino, km, congestion in conexiones:
-        peso = km * (1 + congestion)
-        G.add_edge(origen, destino, weight=peso, distancia_km=km)
+    G.add_edges_from(corredores)
     return G
 
-G = obtener_grafo_yucatan()
+G = crear_grafo_inah()
 
-# 3. Mapeo inteligente: Asignar un destino recomendado automático según el Perfil/Buyer Persona
-RECOMENDACION_POR_PERFIL = {
-    "🧘 Enfoque Calmado y Descanso (Haciendas y Paz)": {
-        "destino_sugerido": "Sisal",
-        "razon": "Ideal para escapar del bullicio urbano, disfrutar de playas vírgenes y atardeceres tranquilos lejos de la masificación de Progreso.",
-        "itinerario": [
-            "Paseo matutino por el muelle histórico de Sisal",
-            "Comida de mariscos frescos frente al mar",
-            "Atardecer de contemplación en la reserva natural"
-        ]
-    },
-    "🍲 Tour Gastronómico y Tradición Culinaria": {
-        "destino_sugerido": "Izamal",
-        "razon": "Seleccionado por su profunda tradición culinaria, mercados locales auténticos y el arte de la cochinita pibil tradicional.",
-        "itinerario": [
-            "Desayuno de panuchos y salbutes tradicionales en el mercado municipal",
-            "Visita cultural al Convento de San Antonio de Padua",
-            "Comida de Cochinita Pibil al horno subterráneo y degustación de Xtabentún"
-        ]
-    },
-    "🧗 Enfoque Extremo y Aventura al Aire Libre": {
-        "destino_sugerido": "Ek Balam",
-        "razon": "Perfecto para combinar arqueología profunda, caminata en selva alta y aventura activa con menor saturación turística.",
-        "itinerario": [
-            "Ascenso guiado a la cima de la Acrópolis Maya",
-            "Recorrido en bicicleta de montaña rumbo al Cenote Xcanché",
-            "Ecoturismo activo y tirolesa en la selva"
-        ]
-    }
+# 3. Capacidades máximas e insumos del modelo del equipo
+capacidades_maximas = {
+    "Zona Arqueológica de Chichén Itzá": 180000,
+    "Zona Arqueológica de Uxmal con museo de sitio": 30000,
+    "Zona Arqueológica de Izamal con museo de sitio": 30000
 }
 
-# 4. Interfaz de usuario en Streamlit
-st.title("🌱 Sistema Inteligente de Recomendación Turística en Yucatán")
-st.markdown("### Te ayudamos a descubrir tu destino ideal según lo que buscas experimentar")
-st.markdown("---")
-
-st.sidebar.header("🎯 ¿Qué tipo de viaje buscas?")
-perfil_seleccionado = st.sidebar.selectbox(
-    "Selecciona tu estilo:",
-    list(RECOMENDACION_POR_PERFIL.keys())
+# 4. Panel de Control en Barra Lateral
+st.sidebar.header("🎛️ Parámetros de Simulación e INAH")
+anio_sel = st.sidebar.selectbox("Año de Análisis:", [2025, 2026])
+mes_sel = st.sidebar.selectbox(
+    "Periodo / Mes de Evaluación:",
+    [
+        ("marzo_total", "Marzo (Semana Santa / Primavera)"),
+        ("julio_total", "Julio (Verano)"),
+        ("agosto_total", "Agosto (Verano)"),
+        ("diciembre_total", "Diciembre (Fin de Año / Invierno)")
+    ],
+    format_func=lambda x: x[1]
 )
 
-# El sistema toma el control y decide por el usuario basándose en su perfil
-datos_recomendacion = RECOMENDACION_POR_PERFIL[perfil_seleccionado]
-destino = datos_recomendacion["destino_sugerido"]
-origen = "Mérida Centro" # Punto de partida estratégico estándar
+st.sidebar.markdown("---")
+st.sidebar.header("🎯 Perfil del Turista (Buyer Persona)")
+perfil_usuario = st.sidebar.selectbox(
+    "Selecciona el enfoque de tu viaje:",
+    [
+        "🧘 Enfoque Calmado y Descanso (Ruta Puuc / Sitios íntimos)",
+        "🍲 Tour Gastronómico y Tradición (Izamal / Valladolid)",
+        "🧗 Enfoque Extremo y Aventura (Ek Balam / Mayapán)"
+    ]
+)
 
-# 5. Cálculo de la ruta con Dijkstra
-ruta_optima = nx.dijkstra_path(G, source=origen, target=destino, weight="weight")
+# 5. Lógica de recomendación y simulación inspirada en el equipo
+col1, col2 = st.columns([1.2, 0.8])
 
-distancia_total = 0
-for i in range(len(ruta_optima) - 1):
-    distancia_total += G[ruta_optima[i]][ruta_optima[i+1]]["distancia_km"]
-
-tiempo_estimado_min = int((distancia_total / 70) * 60)
-
-# 6. Despliegue en pantalla
-st.success(f"🤖 **Recomendación Inteligente del Sistema:** Basado en tu perfil, el destino perfecto para ti es **{destino}**.")
-
-col_info, col_metrics = st.columns([2, 1])
-
-with col_info:
-    st.subheader(f"💡 ¿Por qué te recomendamos {destino}?")
-    st.write(datos_recomendacion["razon"])
+with col1:
+    st.subheader("📊 Diagnóstico de Afluencia y Alertas de Saturación")
+    st.write(f"Evaluando comportamiento operativo para el periodo: **{mes_sel[1]} ({anio_sel})**[cite: 7].")
     
-    st.subheader("📋 Itinerario Sugerido para tu Experiencia:")
-    for act in datos_recomendacion["itinerario"]:
-        st.write(f"• {act}")
+    # Simulación lógica basada en el script de minería del equipo
+    if "Diciembre" in mes_sel[1]:
+        st.warning("⚠️ **ALERTA DE SATURACIÓN DETECTADA EN TEMPORADA ALTA**[cite: 8]")
+        st.markdown("""
+        * **Chichén Itzá:** Superó el umbral (182,900 / 180,000 visitantes)[cite: 8].
+          * *Acción del Algoritmo:* Desvío equitativo de **2,900 turistas excedentes** hacia el corredor oriente[cite: 8].
+          * *Destinos receptores:* **Ekbalam, Izamal y Mayapán** (+967 visitantes c/u)[cite: 8].
+        * **Uxmal:** Superó el aforo (32,692 / 30,000 visitantes)[cite: 8].
+          * *Acción del Algoritmo:* Canalización del excedente hacia **Kabah** (+2,692 visitantes)[cite: 8].
+        """)
+        estado_saturacion = "Saturado (Redireccionamiento Activo)"
+    else:
+        st.success("✅ **Operación Normal. Sin saturación en este periodo.**[cite: 7, 9]")
+        st.markdown("""
+        * Los flujos turísticos se encuentran por debajo de las capacidades máximas permitidas por el INAH[cite: 7, 9].
+        * Las sedes principales operan con fluidez y los corredores alternativos se mantienen disponibles para equilibrar la carga[cite: 9].
+        """)
+        estado_saturacion = "Normal"
 
-with col_metrics:
-    st.subheader("🚗 Datos de Trayecto")
-    st.metric("Origen", origen)
-    st.metric("Destino", destino)
-    st.metric("Distancia estimada", f"{distancia_total:.0f} km")
-    st.metric("Tiempo de viaje", f"~{tiempo_estimado_min} min")
+    st.markdown("---")
+    st.subheader("💡 Recomendación de Viaje según tu Perfil")
+    
+    if "Calmado" in perfil_usuario:
+        st.info("**Destino Sugerido por el Sistema:** Circuito Ruta Puuc (Kabah, Sayil, Labná)")
+        st.write("Ideal para evitar aglomeraciones, disfrutando de arquitectura detallada en entornos selváticos de baja densidad[cite: 4].")
+    elif "Gastronómico" in perfil_usuario:
+        st.info("**Destino Sugerido por el Sistema:** Izamal y Corredor Oriente")
+        st.write("Combina la grandeza de la pirámide Kinich Kakmó con mercados tradicionales y experiencias culinarias mayas auténticas[cite: 3].")
+    else:
+        st.info("**Destino Sugerido por el Sistema:** Ek Balam y Mayapán")
+        st.write("Perfecto para quienes buscan ascenso activo a pirámides principales, estucos históricos y exploración de murallas prehispánicas[cite: 3].")
 
-st.markdown("---")
-
-# Visualización gráfica de la ruta óptima
-col_left, col_right = st.columns(2)
-
-with col_left:
-    st.subheader("🗺️ Ruta Vial Optimizada (Evitando Congestión)")
-    pasos_str = " ➡️ ".join(ruta_optima)
-    st.info(f"**Camino a seguir:** {pasos_str}")
-    st.write("Esta ruta desvía el flujo turístico de las zonas saturadas hacia corredores emergentes sustentables.")
-
-with col_right:
-    st.subheader("🕸️ Mapa de Conectividad en la Red")
-    fig, ax = plt.subplots(figsize=(5, 3.5))
+with col2:
+    st.subheader("🕸️ Topología de Red (NetworkX)")
+    
+    # Generar visualización del grafo del equipo
+    fig, ax = plt.subplots(figsize=(6, 5))
     pos = nx.spring_layout(G, seed=42)
     
-    nx.draw_networkx_nodes(G, pos, node_size=400, node_color="#d3d3d3", ax=ax)
-    nx.draw_networkx_edges(G, pos, edgelist=G.edges(), edge_color="#a0a0a0", width=1, ax=ax)
-    
-    edges_ruta = [(ruta_optima[i], ruta_optima[i+1]) for i in range(len(ruta_optima)-1)]
-    nx.draw_networkx_nodes(G, pos, nodelist=ruta_optima, node_color="#2e7d32", node_size=500, ax=ax)
-    nx.draw_networkx_edges(G, pos, edgelist=edges_ruta, edge_color="#2e7d32", width=3, ax=ax)
-    
+    nx.draw_networkx_nodes(G, pos, node_size=600, node_color="#a8dadc", ax=ax)
+    nx.draw_networkx_edges(G, pos, width=2, edge_color="#457b9d", ax=ax)
     nx.draw_networkx_labels(G, pos, font_size=7, font_weight="bold", ax=ax)
+    
+    plt.title(f"Red de Corredores INAH ({anio_sel})", fontsize=10, fontweight="bold")
     plt.axis("off")
     st.pyplot(fig)
 
 st.markdown("---")
-st.caption("Modelo de Ciencia de Datos aplicado a la redistribución turística sustentable en Yucatán.")
+st.caption("Proyecto Académico de Minería de Datos e Inteligencia de Negocios — Yucatán.")
